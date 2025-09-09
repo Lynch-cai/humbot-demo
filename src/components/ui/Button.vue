@@ -5,6 +5,9 @@
     :loading
     :size="size ?? 'small'"
     :severity="severity ?? 'secondary'"
+    :disabled="disabled"
+    :outlined="outlined"
+    :icon="icon"
   >
     <slot />
   </Button>
@@ -18,7 +21,10 @@ interface ButtonProps {
   label?: string;
   severity?: 'secondary' | 'info' | 'success' | 'warn' | 'danger' | 'contrast' | 'help' | undefined;
   loading?: boolean;
-  size?: 'large' | 'small';
+  size?: 'large' | 'small' | 'medium';
+  disabled?: boolean;
+  outlined?: boolean;
+  icon?: string;
 }
 
 defineProps<ButtonProps>();
