@@ -11,9 +11,7 @@
     "build:prod": "vite build --mode prod",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/",
-    "clean": "rm -rf dist node_modules/.vite",
-    "analyze": "npm run build && npx vite-bundle-analyzer dist"
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@primevue/themes": "^4.2.5",
