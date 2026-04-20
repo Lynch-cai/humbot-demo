@@ -21,15 +21,20 @@ class Huml99de4Stack(Stack):
         glue_role = iam.Role(
             self,
             "GlueCrawlerRole",
-            role_name="huml99de4-glueCrawlerRole",
+            role_name="huml99de4-glue-crawler-role",
             assumed_by=iam.ServicePrincipal("glue.amazonaws.com"),
             inline_policies={
-                "huml99de4-glueCrawlerPolicy": iam.PolicyDocument(
+                "GlueCrawlerPolicy": iam.PolicyDocument(
                     statements=[
                         iam.PolicyStatement(
                             effect=iam.Effect.ALLOW,
                             actions=["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
                             resources=[bucket.bucket_arn, f"{bucket.bucket_arn}/*"],
+                        ),
+                        iam.PolicyStatement(
+                            effect=iam.Effect.ALLOW,
+                            actions=["glue:*"],
+                            resources=["*"],
                         ),
                     ]
                 )
@@ -52,4 +57,5 @@ class Huml99de4Stack(Stack):
         # Outputs
         cdk.CfnOutput(self, "S3BucketName", value=bucket.bucket_name)
         cdk.CfnOutput(self, "GlueCrawlerRoleArn", value=glue_role.role_arn)
+        cdk.CfnOutput(self, "GlueCrawlerRoleName", value=glue_role.role_name)
         cdk.CfnOutput(self, "GlueCrawlerName", value="huml99de4-glueCrawler")
