@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create S3 bucket, IAM role for Glue Crawler, and Glue Crawler.'
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Default: 'hum2xwz25-s3-bucket'
+    Description: 'Name of the S3 bucket.'
+  GlueCrawlerName:
+    Type: String
+    Default: 'hum2xwz25-glue-crawler'
+    Description: 'Name of the Glue Crawler.'
+  GlueCrawlerRoleName:
+    Type: String
+    Default: 'hum2xwz25-glue-crawler-role'
+    Description: 'Name of the IAM role for Glue Crawler.'
+
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref S3BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+
+  GlueCrawlerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Ref GlueCrawlerRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'glue.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'GlueCrawlerPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketName}'
+                  - !Sub 'arn:aws:s3:::${S3BucketName}/*'
+              - Effect: 'Allow'
+                Action:
+                  - 'glue:*'
+                Resource: '*'
+
+  GlueCrawler:
+    Type: 'AWS::Glue::Crawler'
+    Properties:
+      Name: !Ref GlueCrawlerName
+      Role: !GetAtt GlueCrawlerRole.Arn
+      DatabaseName: 'default'
+      Targets:
+        S3Targets:
+          - Path: !Sub 's3://${S3BucketName}/'
+
+  StartGlueCrawler:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: 'hum2xwz25-start-glue-crawler'
+      Handler: 'index.handler'
+      Role: !GetAtt GlueCrawlerRole.Arn
+      Runtime: 'python3.8'
+      Code:
+        ZipFile: |
+          import boto3
+          def handler(event, context):
+              client = boto3.client('glue')
+              response = client.start_crawler(Name='hum2xwz25-glue-crawler')
+              return response
+      Timeout: 300
+
+  StartGlueCrawlerPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt StartGlueCrawler.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'glue.amazonaws.com'
+
+Outputs:
+  S3BucketName:
+    Description: 'Name of the S3 bucket.'
+    Value: !Ref S3BucketName
+  GlueCrawlerName:
+    Description: 'Name of the Glue Crawler.'
+    Value: !Ref GlueCrawlerName
+  GlueCrawlerRoleName:
+    Description: 'Name of the IAM role for Glue Crawler.'
+    Value: !Ref GlueCrawlerRoleName
