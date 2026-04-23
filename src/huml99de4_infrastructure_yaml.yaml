@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template to create S3 bucket, IAM role for Glue, and Glue crawler.'
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Default: 'huml99de4-s3-bucket'
+    Description: 'Name of the S3 bucket.'
+
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref S3BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+
+  GlueCrawlerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'huml99de4-glueCrawlerRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'glue.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'huml99de4-glueCrawlerPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3BucketName}'
+                  - !Sub 'arn:aws:s3:::${S3BucketName}/*'
+
+  GlueCrawler:
+    Type: 'AWS::Glue::Crawler'
+    Properties:
+      Name: 'huml99de4-glueCrawler'
+      Role: !GetAtt GlueCrawlerRole.Arn
+      DatabaseName: 'huml99de4-database'
+      Targets:
+        S3Targets:
+          - Path: !Sub 's3://${S3BucketName}/'
+      Schedule:
+        ScheduleExpression: 'cron(0 12 * * ? *)'
+
+Outputs:
+  S3BucketName:
+    Description: 'Name of the S3 bucket.'
+    Value: !Ref S3BucketName
+  GlueCrawlerRoleArn:
+    Description: 'ARN of the Glue Crawler IAM Role.'
+    Value: !GetAtt GlueCrawlerRole.Arn
+  GlueCrawlerName:
+    Description: 'Name of the Glue Crawler.'
+    Value: !Ref GlueCrawler
